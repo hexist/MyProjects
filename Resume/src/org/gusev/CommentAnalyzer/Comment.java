@@ -1,6 +1,8 @@
 package org.gusev.CommentAnalyzer;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class Comment {
 
@@ -105,25 +107,28 @@ public class Comment {
         }
     }
 
-    public Label checkLabels(TextAnalyzer[] analyzers, String text) {
+    public List<Label> checkLabels(TextAnalyzer[] analyzers, String text) {
+        List<Label> labels = new ArrayList<>();
         Label label = Label.OK;
-        go:
+
         for (int i = 0; i < analyzers.length; i++) {
             if (analyzers[i].processText(text) != Label.OK) {
                 label = analyzers[i].processText(text);
-                break go;
+                labels.add(label);
             }
         }
-        return label;
+
+        if (labels.isEmpty()) labels.add(label);
+        return labels;
     }
 
 
     public static void main(String[] args) {
-        String text = new String("Nice text:(spam1");
+        String text = new String("Nice text =( spam2");
         TextAnalyzer a = new Comment().new SpamAnalyzer(new String[]{"spam1", "spam2"});
         TextAnalyzer b = new Comment().new NegativeTextAnalyzer();
-        TextAnalyzer c = new Comment().new TooLongTextAnalyzer(15);
-        System.out.println(new Comment().checkLabels(new TextAnalyzer[]{a, b, c}, text));
+        TextAnalyzer c = new Comment().new TooLongTextAnalyzer(20);
+        System.out.println(text + "\nThis text is " + new Comment().checkLabels(new TextAnalyzer[]{a, b, c}, text));
 
 
     }
