@@ -13,4 +13,5 @@ public interface MovieService {
     List<Movie> createListMovies(List<Movie> movies);
     void deleteMovie(Movie movie) throws MovieNotFoundException;
     Movie getMovieByTitle(String title);
+    List<Movie> listMovies();
 }

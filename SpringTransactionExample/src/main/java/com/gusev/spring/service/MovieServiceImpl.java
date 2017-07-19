@@ -5,6 +5,7 @@ import com.gusev.spring.exception.MovieNotFoundException;
 import com.gusev.spring.model.Movie;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ public class MovieServiceImpl implements MovieService {
         if (movieDao.getMovieByTitle(movie.getTitle()) != null)
             throw new IllegalArgumentException("A movie with title " + movie.getTitle()
                     + " already exists");
+
         int id = movieDao.createMovie(movie);
         log.info("Movie " + id + " : " + movie.getTitle() + " created.");
         return movie;
@@ -39,11 +41,15 @@ public class MovieServiceImpl implements MovieService {
     @Override
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = MovieNotFoundException.class)
     public void deleteMovie(Movie movie) throws MovieNotFoundException {
-        if (movieDao.getMovieByTitle(movie.getTitle()) == null)
+            Movie mov = movieDao.getMovieByTitle(movie.getTitle());
+
+            //test rollbackFor attribute
+            if(mov == null)
                 throw new MovieNotFoundException("A movie with title " + movie.getTitle()
                         + " doesn't exist in the table", movie.getTitle());
-        movieDao.deleteMovie(movie);
-        log.info("Movie " + movie.getTitle() + " deleted.");
+
+            movieDao.deleteMovie(mov);
+            log.info("Movie " + movie.getTitle() + " deleted.");
     }
 
     @Override
@@ -52,4 +58,9 @@ public class MovieServiceImpl implements MovieService {
         return movieDao.getMovieByTitle(title);
     }
 
+    @Override
+    public List<Movie> listMovies() {
+        List<Movie> allMovies = movieDao.listMovies();
+        return allMovies;
+    }
 }

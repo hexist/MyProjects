@@ -20,18 +20,19 @@ public class App {
 
 //        testAlreadyExist(movieService);
 //        testSomeAlreadyExist(movieService);
-        testDelete(movieService);
+//        testDelete(movieService);
+        testListMovies(movieService);
     }
 
     private static void testAlreadyExist(MovieService movieService) {
         //This movie already exists in the table
-        Movie movie = new Movie("Knockin' on Heaven's Door ", "Nice movie!");
+        Movie movie = new Movie("Knockin' on Heaven's Door", "Nice movie!");
         movieService.createMovie(movie);
     }
 
     private static void testSomeAlreadyExist(MovieService movieService) {
         //This movie already exists in the table
-        Movie movie1 = new Movie("Knockin' on Heaven's Door ", "Nice movie!");
+        Movie movie1 = new Movie("Knockin' on Heaven's Door", "Nice movie!");
 
         //This movie will not be added to the table
         Movie movie2 = new Movie("Green mile", "Great movie!");
@@ -55,6 +56,12 @@ public class App {
         }
     }
 
+    private  static void testListMovies(MovieService movieService){
+        List<Movie> allMovies = movieService.listMovies();
 
+        for(Movie mov: allMovies){
+            log.info(mov);
+        }
+    }
 
 }

@@ -2,98 +2,66 @@ package com.gusev.spring.dao;
 
 import com.gusev.spring.model.Movie;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 
-import javax.sql.DataSource;
 import java.sql.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class JdbcMovieDao implements MovieDao {
 
     @Autowired
-    private DataSource dataSource;
+    private JdbcTemplate jdbcTemplate;
 
     @Override
     public Integer createMovie(Movie movie) {
-        String sql = "INSERT INTO movies (movie_title, movie_descr) VALUES (?, ?)";
-        int movieId = 0;
-        Connection connection = null;
-        try{
-            connection = dataSource.getConnection();
-            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            ps.setString(1, movie.getTitle());
-            ps.setString(2, movie.getDescription());
-            ps.executeUpdate();
+        SimpleJdbcInsert insertMovie = new SimpleJdbcInsert(jdbcTemplate).withTableName("movies")
+                .usingGeneratedKeyColumns("movie_id");
 
-            ResultSet keys = ps.getGeneratedKeys();
-            if(keys.next()){
-                movieId = keys.getInt(1);
-            }
-            keys.close();
-            ps.close();
-        }catch(SQLException e){
-            e.printStackTrace();
-        }finally {
-            if(connection != null){
-                try{
-                    connection.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        return movieId;
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put("movie_title", movie.getTitle());
+        params.put("movie_descr", movie.getDescription());
+
+        Number id = insertMovie.executeAndReturnKey(params);
+        return id.intValue();
     }
 
     @Override
     public void deleteMovie(Movie movie) {
-        String sql = "DELETE FROM movies where movie_id = ?";
-        Connection connection = null;
-        try {
-            connection = dataSource.getConnection();
-            PreparedStatement ps = connection.prepareStatement(sql);
-            ps.setInt(1, movie.getId());
-            ps.executeUpdate();
-            ps.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            if (connection != null) {
-                try {
-                    connection.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
+        String sql = "DELETE FROM movies WHERE movie_id = ?";
+        jdbcTemplate.update(sql, movie.getId());
     }
 
     @Override
     public Movie getMovieByTitle(String title) {
-        String sql = "SELECT * FROM movies WHERE movie_title = ?";
-        Movie movie = null;
-        Connection connection = null;
         try {
-            connection = dataSource.getConnection();
-            PreparedStatement ps = connection.prepareStatement(sql);
-            ps.setString(1, title);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()){
-                movie = new Movie();
-                movie.setId(rs.getInt("movie_id"));
-                movie.setTitle(rs.getString("movie_title"));
-                movie.setDescription(rs.getString("movie_descr"));
-            }
-            rs.close();
-            ps.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            if (connection != null) {
-                try {
-                    connection.close();
-                } catch (SQLException e) {
-                }
-            }
+            String sql = "SELECT * FROM movies WHERE movie_title = ?";
+            return jdbcTemplate.queryForObject(sql, new MovieRowMapper(), title);
+        } catch (EmptyResultDataAccessException ex) {
+            return null;
         }
-        return movie;
+    }
+
+    @Override
+    public List<Movie> listMovies() {
+        String sql = "SELECT * FROM movies";
+        List<Movie> allMovies = jdbcTemplate.query(sql, new MovieRowMapper());
+        return allMovies;
+    }
+
+    private class MovieRowMapper implements RowMapper<Movie> {
+
+        @Override
+        public Movie mapRow(ResultSet resultSet, int i) throws SQLException {
+            Movie movie = new Movie();
+            movie.setId(resultSet.getInt("movie_id"));
+            movie.setTitle(resultSet.getString("movie_title"));
+            movie.setDescription(resultSet.getString("movie_descr"));
+            return movie;
+        }
     }
 }
